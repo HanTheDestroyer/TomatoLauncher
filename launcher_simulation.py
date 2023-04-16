@@ -13,6 +13,7 @@ from colorama import Fore, Style
 # assumption: It can only see 0.1 radians of area in front of its nozzle at a given time.
 # assumption: It is fast enough to change directions instantaneously.
 # assumption: Its calculations are instant.
+
 class TomatoLauncher:
     def __init__(self):
         colorama.init()
