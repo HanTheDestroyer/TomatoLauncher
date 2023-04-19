@@ -7,7 +7,6 @@ import colorama
 from colorama import Fore, Style
 import pygame as pg
 import sys
-import matplotlib.pyplot as plt
 
 
 # initialize Simulation class to handle pygame
@@ -42,7 +41,6 @@ class Target:
     def move(self):
         self.pos += self.vel
 
-
     def draw(self, screen):
         if self.destroyed is False:
             radius = np.max([int((self.pos[2] + 150) / 15), 1])
@@ -57,8 +55,8 @@ class Target:
 
 # initialize TomatoLauncher class.
 # it takes targets as input.
-# assumption: It can only see 0.1 radians of area in front of its nozzle at a given time.
-# assumption: It is fast enough to change directions instantaneously.
+# assumption: It can only see a set area in front of its nozzle at a given time in radians.
+# assumption: It is fast enough to change directions instantaneously when it sees a target.
 # assumption: Its calculations are instant.
 class TomatoLauncher:
     def __init__(self, screen):
@@ -67,18 +65,17 @@ class TomatoLauncher:
         self.xy_angular_nozzle_speed = np.float16(-0.05)
         self.max_tomato_velocity_mag = np.float16(20)
         self.gravity = st.gravity
-        # Where launcher is located.
         self.position = np.array([st.screen_size[0] / 2,
-                                  st.screen_size[1] / 2, 0], dtype=float)
+                                  st.screen_size[1] / 2, 0], dtype=float)  # where launcher is located.
         self.nozzle_dir = np.array([1, 0])  # Where launcher is looking on xy plane.
-        self.flight_time = 10  # Tomatoes can fly for ten seconds.
+        self.flight_time = 10  # Tomatoes can fly for this many frames.
         self.targets = []
         self.read_dataset()
 
+        # feel free to change these numbers.
         self.damping = 0.5
         self.mass = 1
         self.gravity = 40
-        self.logs = []
 
     def read_dataset(self):
         """reads the dataset created by dataset.py."""
@@ -96,7 +93,8 @@ class TomatoLauncher:
             self.targets.append(Target(pos=pos, vel=vel))
 
     @staticmethod
-    def rotate_vector(vector, angle):  # Rotates XY plane by an angle.
+    def rotate_vector(vector, angle):
+        """Rotates XY plane by an angle.""" 
         rotation_matrix = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
         rotated_vector = np.dot(rotation_matrix, vector)
         return rotated_vector
@@ -108,7 +106,8 @@ class TomatoLauncher:
         vector_mag = np.sum(vector_abs)
         return vector / vector_mag
 
-    def search(self):  # system slowly turns and searches between two angles.
+    def search(self): 
+        """Turns the system slowly and searches for targets"""
         sleep(0.05)
         old_dir = self.nozzle_dir.copy()
         old_angle = np.degrees(np.arctan2(old_dir[1], old_dir[0])) + 180
@@ -140,10 +139,8 @@ class TomatoLauncher:
                 self.nozzle_dir = self.destroy(counter)
                 del self.targets[counter]
 
-    def calculate_initial_vy(self, vector1, vector2, time):
-        return (1 / time) * (vector2 - vector1 - 0.5 * self.gravity * (time ** 2))
-
     def destroy(self, hit):
+        """Shoots at the target"""
         # this part requires a few assumptions.
         # Assumption: Tomato Launcher is set in a way such that it always hits target within 10 frames.
         # Assumption: Tomato Launcher has to be reloaded for 10 frames once it has shot.
@@ -170,7 +167,6 @@ class TomatoLauncher:
         print(Fore.LIGHTRED_EX + f'Taking shot. Tomato velocity is '
               + Fore.LIGHTWHITE_EX + f'{tomato_velocity}' + Style.RESET_ALL)
         tomato_position = self.position.copy()
-
         frame_counter = 0
         while True:
             frame_counter += 1
@@ -182,7 +178,6 @@ class TomatoLauncher:
             sleep(0.05)
             for t in self.targets:
                 t.move()
-
             tomato_position[0] = calc_x_y_pos(self.position[0], tomato_velocity[0],
                                               frame_counter, self.damping, self.mass)
             tomato_position[1] = calc_x_y_pos(self.position[1], tomato_velocity[1],
@@ -192,6 +187,7 @@ class TomatoLauncher:
 
             print(Fore.RED + f'Tomato at {tomato_position}' + Style.RESET_ALL)
             print(Fore.CYAN + f'Target at {self.targets[hit].pos}')
+            # if distance is smaller than 2, assume that target was hit.
             curr_distance = np.linalg.norm(tomato_position - self.targets[hit].pos)
             if curr_distance < 2:
                 print(f'Tomato hit target with positional difference of {curr_distance}')
@@ -200,6 +196,7 @@ class TomatoLauncher:
         return self.get_direction(tomato_position - self.position)
 
     def draw(self, old_dir, new_dir):
+        """Draw the visualization. It is top view."""
         self.screen.fill(pg.Color('black'))
         for t in self.targets:
             t.draw(self.screen)
@@ -223,6 +220,7 @@ class TomatoLauncher:
         pg.display.update()
 
 
+# these are pure math. Basically solutions of differential equation of motion when linear drag and gravity are present.
 def calc_x_y_pos(x_0, v_0, t, b, m):
     return x_0 + (m * v_0 / b) - (m * v_0 / b) * (np.e ** (-b * t / m))
 
