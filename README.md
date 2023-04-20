@@ -5,4 +5,10 @@ Run launcher_simulation.py or launcher_with_drag.py directly. They both have gra
 
 Do whatever you want with it.
 
+<video width="320" height="240" controls>
+  <source src="https://i.imgur.com/DI2rHaV.mp4" type="video/mp4">
+Your browser does not support the video tag.
+</video>
+
 pip install numpy pandas colorama pygame.
+
